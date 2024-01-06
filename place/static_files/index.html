@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <title>r/place clone</title>
+
+    <link rel="stylesheet" href="https://d3rim6gnftek4x.cloudfront.net/index.css">
+
+    <script src="https://d3rim6gnftek4x.cloudfront.net/jquery-3.7.1.min.js"></script>
+    <script src="https://d3rim6gnftek4x.cloudfront.net/index.js"></script>
+</head>
+
+<body>
+    <h1>r/place clone</h1>
+
+    <canvas id="canvas" width="1001" height="1001"></canvas>
+    <form id="setForm">
+        <input type="number" id="x" placeholder="x" min="0" max="1000" style="width: 60px;">
+        <input type="number" id="y" placeholder="y" min="0" max="1000" style="width: 60px;">
+        &nbsp; &nbsp; &nbsp;
+        <label for="color">Color:</label>
+        <select id="color" name="color" onchange="updateColorPreview()">
+            <!-- Predefined set of 16 colors -->
+            <option value="#000000" selected>Black</option>
+            <option value="#800000">Maroon</option>
+            <option value="#008000">Green</option>
+            <option value="#808000">Olive</option>
+            <option value="#000080">Navy</option>
+            <option value="#800080">Purple</option>
+            <option value="#008080">Teal</option>
+            <option value="#808080">Gray</option>
+            <option value="#C0C0C0">Silver</option>
+            <option value="#FF0000">Red</option>
+            <option value="#00FF00">Lime</option>
+            <option value="#FFFF00">Yellow</option>
+            <option value="#0000FF">Blue</option>
+            <option value="#FF00FF">Fuchsia</option>
+            <option value="#00FFFF">Aqua</option>
+            <option value="#FFFFFF">White</option>
+        </select>
+        &nbsp; &nbsp; &nbsp;
+        <div id="colorPreview"
+            style="width: 20px; height: 20px; display: inline-block; border: 1px solid #ccc; background-color: #000000;">
+        </div>
+        &nbsp; &nbsp; &nbsp;
+        <input type="submit" name="set" value="set" />
+    </form>
+</body>
+
+</html>

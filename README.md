@@ -1,2 +1,3 @@
-# R-Place
-Built a fully functional and scalable under several regions R/Place copy using the following AWS services: EC2, Lambda, DynamoDB, Elasticache, APIGateway, CloudFront, CloudFormation, IAM, VPC, CloudWatch, S3
+utorid: tabbahch email: christian.tabbah@mail.utoronto.ca utorid: duvallou email: louisphilippe.duval@mail.utoronto.ca utorid: hokinmat email: matthew.hokin@mail.utoronto.ca
+
+*Note: you may need to run npm i with node 16 on each directory as aws-crypto cannot be committed.

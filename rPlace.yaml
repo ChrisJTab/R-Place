@@ -1,0 +1,1266 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  Generator: "former2"
+Description: ""
+Resources:
+  DynamoDBTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions: 
+      - 
+        AttributeName: "connectionId"
+        AttributeType: "S"
+      - 
+        AttributeName: "timestamp"
+        AttributeType: "N"
+      BillingMode: "PAY_PER_REQUEST"
+      TableName: "rPlaceLog"
+      KeySchema: 
+      - 
+        AttributeName: "connectionId"
+        KeyType: "HASH"
+      - 
+        AttributeName: "timestamp"
+        KeyType: "RANGE"
+      TimeToLiveSpecification: 
+        AttributeName: "24hrTTL"
+        Enabled: true
+
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: "pixel-statics"
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration: 
+        - 
+          ServerSideEncryptionByDefault: 
+            SSEAlgorithm: "AES256"
+          BucketKeyEnabled: true
+      OwnershipControls: 
+        Rules: 
+        - 
+          ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration: 
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ElastiCacheCacheCluster:
+    Type: "AWS::ElastiCache::CacheCluster"
+    Properties:
+      CacheNodeType: "cache.t2.micro"
+      Engine: "redis"
+      EngineVersion: "7.1.0"
+      NumCacheNodes: 1
+      PreferredAvailabilityZone: !GetAtt EC2Subnet2.AvailabilityZone
+      PreferredMaintenanceWindow: "tue:09:00-tue:10:00"
+      CacheParameterGroupName: "default.redis7"
+      CacheSubnetGroupName: "pixel-subnet"
+      AutoMinorVersionUpgrade: true
+      VpcSecurityGroupIds: 
+      - "sg-0ace69e6e84be2c81"
+      SnapshotRetentionLimit: 0
+      SnapshotWindow: "03:00-04:00"
+      ClusterName: "rediscluster-001"
+
+  ElastiCacheCacheCluster2:
+    Type: "AWS::ElastiCache::CacheCluster"
+    Properties:
+      CacheNodeType: "cache.t2.micro"
+      Engine: "redis"
+      EngineVersion: "7.1.0"
+      NumCacheNodes: 1
+      PreferredAvailabilityZone: !GetAtt EC2Subnet6.AvailabilityZone
+      PreferredMaintenanceWindow: "tue:09:00-tue:10:00"
+      CacheParameterGroupName: "default.redis7"
+      CacheSubnetGroupName: "pixel-subnet"
+      AutoMinorVersionUpgrade: true
+      VpcSecurityGroupIds: 
+      - "sg-0ace69e6e84be2c81"
+      SnapshotRetentionLimit: 1
+      SnapshotWindow: "03:00-04:00"
+      ClusterName: "rediscluster-002"
+
+  ElastiCacheCacheCluster3:
+    Type: "AWS::ElastiCache::CacheCluster"
+    Properties:
+      CacheNodeType: "cache.t2.micro"
+      Engine: "redis"
+      EngineVersion: "7.1.0"
+      NumCacheNodes: 1
+      PreferredAvailabilityZone: !GetAtt EC2Subnet4.AvailabilityZone
+      PreferredMaintenanceWindow: "tue:09:00-tue:10:00"
+      CacheParameterGroupName: "default.redis7"
+      CacheSubnetGroupName: "pixel-subnet"
+      AutoMinorVersionUpgrade: true
+      VpcSecurityGroupIds: 
+      - "sg-0ace69e6e84be2c81"
+      SnapshotRetentionLimit: 0
+      SnapshotWindow: "03:00-04:00"
+      ClusterName: "rediscluster-003"
+
+  EC2NatGateway:
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      SubnetId: !Ref EC2Subnet4
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "new_nat_gateway"
+      AllocationId: !GetAtt EC2EIP.AllocationId
+
+  EC2VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "172.31.0.0/16"
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: "default"
+
+  EC2Route:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref EC2NatGateway
+      RouteTableId: !Ref EC2RouteTable
+
+  EC2Route2:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref EC2InternetGateway
+      RouteTableId: !Ref EC2RouteTable2
+
+  EC2RouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "route-2"
+
+  EC2RouteTable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+
+  EC2Subnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}f"
+      CidrBlock: "172.31.64.0/20"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: true
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lambda-subnet-point-to-nat-1"
+
+  EC2Subnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}e"
+      CidrBlock: "172.31.48.0/20"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: true
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lambda-subnet-point-to-nat-2"
+
+  EC2Subnet3:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}d"
+      CidrBlock: "172.31.32.0/20"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: true
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lambda-subnet-point-to-nat-3"
+
+  EC2Subnet4:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      CidrBlock: "172.31.0.0/20"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: true
+      Tags: 
+      - 
+        Key: "Name"
+        Value: "lambda-subnet-point-to-igw"
+
+  EC2Subnet5:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      CidrBlock: "172.31.16.0/20"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: true
+
+  EC2Subnet6:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}b"
+      CidrBlock: "172.31.80.0/20"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: true
+
+  EC2InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+
+  EC2NetworkAcl:
+    Type: "AWS::EC2::NetworkAcl"
+    Properties:
+      VpcId: !Ref EC2VPC
+
+  EC2VPCDHCPOptionsAssociation:
+    Type: "AWS::EC2::VPCDHCPOptionsAssociation"
+    Properties:
+      DhcpOptionsId: !Ref EC2DHCPOptions
+      VpcId: !Ref EC2VPC
+
+  EC2DHCPOptions:
+    Type: "AWS::EC2::DHCPOptions"
+    Properties:
+      DomainName: "ec2.internal"
+
+  EC2EIP:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: "vpc"
+
+  EC2EIPAssociation:
+    Type: "AWS::EC2::EIPAssociation"
+    Properties:
+      AllocationId: !GetAtt EC2EIP.AllocationId
+      NetworkInterfaceId: "eni-058126ad07303f163"
+      PrivateIpAddress: "172.31.11.13"
+
+  EC2VPCGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      InternetGatewayId: !Ref EC2InternetGateway
+      VpcId: !Ref EC2VPC
+
+  EC2SubnetNetworkAclAssociation:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      SubnetId: !Ref EC2Subnet6
+      NetworkAclId: !Ref EC2NetworkAcl
+
+  EC2SubnetNetworkAclAssociation2:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      SubnetId: !Ref EC2Subnet5
+      NetworkAclId: !Ref EC2NetworkAcl
+
+  EC2SubnetNetworkAclAssociation3:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      SubnetId: !Ref EC2Subnet2
+      NetworkAclId: !Ref EC2NetworkAcl
+
+  EC2SubnetNetworkAclAssociation4:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      SubnetId: !Ref EC2Subnet3
+      NetworkAclId: !Ref EC2NetworkAcl
+
+  EC2SubnetNetworkAclAssociation5:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      SubnetId: !Ref EC2Subnet
+      NetworkAclId: !Ref EC2NetworkAcl
+
+  EC2SubnetNetworkAclAssociation6:
+    Type: "AWS::EC2::SubnetNetworkAclAssociation"
+    Properties:
+      SubnetId: !Ref EC2Subnet4
+      NetworkAclId: !Ref EC2NetworkAcl
+
+  EC2SubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable
+      SubnetId: !Ref EC2Subnet3
+
+  EC2SubnetRouteTableAssociation2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable
+      SubnetId: !Ref EC2Subnet
+
+  EC2SubnetRouteTableAssociation3:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable
+      SubnetId: !Ref EC2Subnet2
+
+  CloudFrontDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig: 
+        Origins: 
+        - 
+          ConnectionAttempts: 3
+          ConnectionTimeout: 10
+          DomainName: !Sub "${S3Bucket}.s3.${AWS::Region}.amazonaws.com"
+          Id: !Sub "${S3Bucket}.s3.${AWS::Region}.amazonaws.com"
+          OriginPath: ""
+          S3OriginConfig: 
+            OriginAccessIdentity: ""
+        DefaultCacheBehavior: 
+          AllowedMethods: 
+          - "HEAD"
+          - "GET"
+          CachedMethods: 
+          - "HEAD"
+          - "GET"
+          Compress: true
+          CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6"
+          SmoothStreaming: false
+          TargetOriginId: !Sub "${S3Bucket}.s3.${AWS::Region}.amazonaws.com"
+          ViewerProtocolPolicy: "allow-all"
+        Comment: ""
+        PriceClass: "PriceClass_100"
+        Enabled: true
+        ViewerCertificate: 
+          CloudFrontDefaultCertificate: true
+          MinimumProtocolVersion: "TLSv1"
+          SslSupportMethod: "vip"
+        Restrictions: 
+          GeoRestriction: 
+            RestrictionType: "none"
+        WebACLId: !Sub "arn:aws:wafv2:${AWS::Region}:${AWS::AccountId}:global/webacl/CreatedByCloudFront-23fa0ae6-faac-4b7a-beab-a43677ffcda9/bded5fc4-95ac-4192-96da-7fe7520b185a"
+        HttpVersion: "http2and3"
+        DefaultRootObject: ""
+        IPV6Enabled: true
+
+  ApiGatewayRestApi:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: "BoardAPI"
+      Description: "Fetches the whole r/place board from redis."
+      ApiKeySourceType: "HEADER"
+      EndpointConfiguration: 
+        Types: 
+        - "REGIONAL"
+
+  ApiGatewayV2Api:
+    Type: "AWS::ApiGatewayV2::Api"
+    Properties:
+      ApiKeySelectionExpression: "$request.header.x-api-key"
+      ProtocolType: "WEBSOCKET"
+      RouteSelectionExpression: "$request.body.action"
+      DisableExecuteApiEndpoint: false
+
+  ApiGatewayStage:
+    Type: "AWS::ApiGateway::Stage"
+    Properties:
+      StageName: !Ref ApiGatewayV2Stage
+      DeploymentId: "3ssnw2"
+      RestApiId: !Ref ApiGatewayRestApi
+      CacheClusterEnabled: false
+      CacheClusterSize: "0.5"
+      TracingEnabled: false
+
+  ApiGatewayV2Stage:
+    Type: "AWS::ApiGatewayV2::Stage"
+    Properties:
+      StageName: "production"
+      StageVariables: {}
+      ApiId: !Ref ApiGatewayV2Api
+      DeploymentId: "b94g4b"
+      RouteSettings: {}
+      DefaultRouteSettings: 
+        DataTraceEnabled: false
+        DetailedMetricsEnabled: false
+        LoggingLevel: "OFF"
+
+  ApiGatewayMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: "e53o16s2lj"
+      HttpMethod: "OPTIONS"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: {}
+      MethodResponses: 
+      - 
+        ResponseModels: 
+          "application/json": "Empty"
+        ResponseParameters: 
+          "method.response.header.Access-Control-Allow-Headers": false
+          "method.response.header.Access-Control-Allow-Methods": false
+          "method.response.header.Access-Control-Allow-Origin": false
+        StatusCode: "200"
+      Integration: 
+        CacheNamespace: "e53o16s2lj"
+        IntegrationResponses: 
+        - 
+          ResponseParameters: 
+            "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'"
+            "method.response.header.Access-Control-Allow-Origin": "'*'"
+          StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        RequestTemplates: 
+          "application/json": "{\"statusCode\": 200}"
+        TimeoutInMillis: 29000
+        Type: "MOCK"
+
+  ApiGatewayMethod2:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref ApiGatewayRestApi
+      ResourceId: "e53o16s2lj"
+      HttpMethod: "GET"
+      AuthorizationType: "NONE"
+      ApiKeyRequired: false
+      RequestParameters: {}
+      MethodResponses: 
+      - 
+        ResponseModels: 
+          "application/json": "Empty"
+        ResponseParameters: 
+          "method.response.header.Access-Control-Allow-Origin": false
+        StatusCode: "200"
+      Integration: 
+        CacheNamespace: "e53o16s2lj"
+        ContentHandling: "CONVERT_TO_TEXT"
+        IntegrationHttpMethod: "POST"
+        IntegrationResponses: 
+        - 
+          ResponseParameters: 
+            "method.response.header.Access-Control-Allow-Origin": "'*'"
+          ResponseTemplates: {}
+          StatusCode: "200"
+        PassthroughBehavior: "WHEN_NO_MATCH"
+        TimeoutInMillis: 29000
+        Type: "AWS"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction3}/invocations"
+
+  ApiGatewayV2Route:
+    Type: "AWS::ApiGatewayV2::Route"
+    Properties:
+      ApiId: !Ref ApiGatewayV2Api
+      ApiKeyRequired: false
+      AuthorizationType: "NONE"
+      RouteKey: "$connect"
+      Target: "integrations/54pdoog"
+
+  ApiGatewayV2Route2:
+    Type: "AWS::ApiGatewayV2::Route"
+    Properties:
+      ApiId: !Ref ApiGatewayV2Api
+      ApiKeyRequired: false
+      AuthorizationType: "NONE"
+      RouteKey: "onMessage"
+      Target: "integrations/05hqjgg"
+
+  ApiGatewayV2Route3:
+    Type: "AWS::ApiGatewayV2::Route"
+    Properties:
+      ApiId: !Ref ApiGatewayV2Api
+      ApiKeyRequired: false
+      AuthorizationType: "NONE"
+      RouteKey: "$disconnect"
+      Target: "integrations/ikmdua7"
+
+  LambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: ""
+      FunctionName: "OnMessage1"
+      Handler: "index.handler"
+      Architectures: 
+      - "x86_64"
+      Code: 
+        S3Bucket: "prod-iad-c1-djusa-tasks"
+        S3Key: !Sub "/snapshots/${AWS::AccountId}/OnMessage1-13c8ead9-42e0-46fc-9df0-2a4ecafb5ff7"
+        S3ObjectVersion: "V_DRYR59VrQqSQWYS7T08SjWM0xUMTjk"
+      MemorySize: 128
+      Role: !GetAtt IAMRole12.Arn
+      Runtime: "nodejs16.x"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+      VpcConfig: 
+        SubnetIds: 
+        - !Ref EC2Subnet3
+        - !Ref EC2Subnet2
+        - !Ref EC2Subnet
+        SecurityGroupIds: 
+        - "sg-0ace69e6e84be2c81"
+      EphemeralStorage: 
+        Size: 512
+
+  LambdaFunction2:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: ""
+      FunctionName: "Disconnect1"
+      Handler: "index.handler"
+      Architectures: 
+      - "x86_64"
+      Code: 
+        S3Bucket: "prod-iad-c1-djusa-tasks"
+        S3Key: !Sub "/snapshots/${AWS::AccountId}/Disconnect1-bb53952d-d731-4b6b-b37b-121bee4963a3"
+        S3ObjectVersion: ".dchh.LOEYRimZYm7HrZ3fHdAlU8Vtq1"
+      MemorySize: 128
+      Role: !GetAtt IAMRole12.Arn
+      Runtime: "nodejs16.x"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+      VpcConfig: 
+        SubnetIds: 
+        - !Ref EC2Subnet3
+        - !Ref EC2Subnet4
+        - !Ref EC2Subnet6
+        - !Ref EC2Subnet5
+        - !Ref EC2Subnet2
+        - !Ref EC2Subnet
+        SecurityGroupIds: 
+        - "sg-0ace69e6e84be2c81"
+      EphemeralStorage: 
+        Size: 512
+
+  LambdaFunction3:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: ""
+      FunctionName: "sendBoard-HTTP"
+      Handler: "index.handler"
+      Architectures: 
+      - "x86_64"
+      Code: 
+        S3Bucket: "prod-iad-c1-djusa-tasks"
+        S3Key: !Sub "/snapshots/${AWS::AccountId}/sendBoard-HTTP-199919e1-528a-415a-8708-39cdd89a787e"
+        S3ObjectVersion: "FxnjAJv3SxIDoZp5dP5FYMZC819xKln3"
+      MemorySize: 128
+      Role: !GetAtt IAMRole12.Arn
+      Runtime: "nodejs16.x"
+      Timeout: 10
+      TracingConfig: 
+        Mode: "PassThrough"
+      VpcConfig: 
+        SubnetIds: 
+        - !Ref EC2Subnet3
+        - !Ref EC2Subnet2
+        - !Ref EC2Subnet
+        SecurityGroupIds: 
+        - "sg-0ace69e6e84be2c81"
+      EphemeralStorage: 
+        Size: 512
+
+  LambdaFunction4:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: ""
+      FunctionName: "Connect1"
+      Handler: "index.handler"
+      Architectures: 
+      - "x86_64"
+      Code: 
+        S3Bucket: "prod-iad-c1-djusa-tasks"
+        S3Key: !Sub "/snapshots/${AWS::AccountId}/Connect1-4fab9524-faeb-4686-a7a7-dd72ad2fd36b"
+        S3ObjectVersion: "oQTAFnBtEEqP5x54hZrQT8rqn4VgV0sU"
+      MemorySize: 128
+      Role: !GetAtt IAMRole12.Arn
+      Runtime: "nodejs16.x"
+      Timeout: 3
+      TracingConfig: 
+        Mode: "PassThrough"
+      VpcConfig: 
+        SubnetIds: 
+        - !Ref EC2Subnet3
+        - !Ref EC2Subnet4
+        - !Ref EC2Subnet6
+        - !Ref EC2Subnet5
+        - !Ref EC2Subnet2
+        - !Ref EC2Subnet
+        SecurityGroupIds: 
+        - "sg-0ace69e6e84be2c81"
+      EphemeralStorage: 
+        Size: 512
+
+  IAMRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "AppRunnerECRAccessRole"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"build.apprunner.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+      Description: "This role gives App Runner permission to access ECR"
+
+  IAMRole2:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "Connect-role-a05uh274"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy13
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+
+  IAMRole3:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "Connect-role-1vlrkxoz"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy12
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+
+  IAMRole4:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "Disconnect-role-0jzvcbqo"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy5
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+
+  IAMRole5:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "Disconnect-role-xiv3g0hx"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy11
+
+  IAMRole6:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: "ecr-role"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ec2.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
+      Description: "Allows EC2 instances to call AWS services on your behalf."
+
+  IAMRole7:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: "ecsTaskExecutionRole"
+      AssumeRolePolicyDocument: "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+
+  IAMRole8:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "Rediss"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"edgelambda.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy14
+
+  IAMRole9:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "RedisTester"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"lambda.amazonaws.com\",\"edgelambda.amazonaws.com\"]},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy16
+
+  IAMRole10:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: !Sub "${IAMRole9}v2-role-w8tki71e"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy8
+      - !Ref IAMManagedPolicy7
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - "arn:aws:iam::aws:policy/AmazonElastiCacheFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+
+  IAMRole11:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: !Sub "${IAMRole9}-role-dpuqcphs"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy2
+      - !Ref IAMManagedPolicy17
+      - "arn:aws:iam::aws:policy/AmazonVPCFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonElastiCacheFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+
+  IAMRole12:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "redistesterv3-role-95wvsdso"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy6
+      - !Ref IAMManagedPolicy10
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaDynamoDBExecutionRole"
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - "arn:aws:iam::aws:policy/AmazonElastiCacheFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+      - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+
+  IAMRole13:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "SendMessage-js-role-0187hlw1"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy
+      - !Ref IAMManagedPolicy15
+
+  IAMRole14:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "SendMessage-js-role-nsdrmwtz"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy4
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      - "arn:aws:iam::aws:policy/AmazonElastiCacheFullAccess"
+
+  IAMRole15:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/service-role/"
+      RoleName: "SendMessage-role-xc3tbwrj"
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns: 
+      - !Ref IAMManagedPolicy3
+      - "arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess"
+
+  IAMManagedPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-7c51f90a-e323-4fdd-860e-5e07ba441d2e"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/SendMessage-js:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy2:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-8e8199c0-e320-4f9f-bb30-03c71368c940"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${IAMRole9}:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy3:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-03bd416d-7143-4bd5-94d7-28e1c77ac98a"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/SendMessage:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy4:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-c90528a5-e669-4cab-8096-2fe7c6dc2af6"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+          	"Version": "2012-10-17",
+          	"Statement": [
+          	    {
+                      "Effect": "Allow",
+                      "Action": [
+                      "ec2:DescribeNetworkInterfaces",
+                      "ec2:CreateNetworkInterface",
+                      "ec2:DeleteNetworkInterface",
+                      "ec2:DescribeInstances",
+                      "ec2:AttachNetworkInterface"
+                      ],
+                      "Resource": "*"
+                  },
+          		{
+          			"Effect": "Allow",
+          			"Action": "logs:CreateLogGroup",
+          			"Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+          		},
+          		{
+          			"Effect": "Allow",
+          			"Action": [
+          				"logs:CreateLogStream",
+          				"logs:PutLogEvents"
+          			],
+          			"Resource": [
+          				"arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/SendMessage-js:*"
+          			]
+          		}
+          	]
+          }
+
+  IAMManagedPolicy5:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-060ade0a-08fa-43dc-a924-7febbe8cfef4"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/Disconnect:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy6:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaVPCAccessExecutionRole-81984615-26cd-4e98-8b8b-0132db66921a"
+      Path: "/service-role/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "ec2:CreateNetworkInterface",
+                          "ec2:DeleteNetworkInterface",
+                          "ec2:DescribeNetworkInterfaces"
+                      ],
+                      "Resource": "*"
+                  }
+              ]
+          }
+
+  IAMManagedPolicy7:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaVPCAccessExecutionRole-beebd6e7-7461-4a16-a93b-6149f3678969"
+      Path: "/service-role/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "ec2:CreateNetworkInterface",
+                          "ec2:DeleteNetworkInterface",
+                          "ec2:DescribeNetworkInterfaces"
+                      ],
+                      "Resource": "*"
+                  }
+              ]
+          }
+
+  IAMManagedPolicy8:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-b091ec0d-be7c-4bc1-a942-3b30630ce8ab"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${IAMRole9}v2:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy9:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-a432a64b-d7d9-45fd-be5c-18b74e561589"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/Broadcast:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy10:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-c96054bc-1cf5-489a-bcbb-3c4e8b788901"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/redistesterv3:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy11:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-a8dbbee8-550b-4cc8-86d3-4e03edcd83cc"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/Disconnect:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy12:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-671162fb-7170-49f5-8cb6-57e9ecf5b424"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/Connect:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy13:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-8b40507d-ff39-427b-b770-ae26ab93ec95"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": "logs:CreateLogGroup",
+                      "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/Connect:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy14:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaEdgeExecutionRole-95bf02ed-df85-416b-a2e2-61119cd38167"
+      Path: "/service-role/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:*:*:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy15:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaVPCAccessExecutionRole-809aaa8e-8a4c-4693-8180-0e2a21660896"
+      Path: "/service-role/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "ec2:CreateNetworkInterface",
+                          "ec2:DeleteNetworkInterface",
+                          "ec2:DescribeNetworkInterfaces"
+                      ],
+                      "Resource": "*"
+                  }
+              ]
+          }
+
+  IAMManagedPolicy16:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaEdgeExecutionRole-6656382a-1694-432f-81c1-78f4b1fdd900"
+      Path: "/service-role/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                      ],
+                      "Resource": [
+                          "arn:aws:logs:*:*:*"
+                      ]
+                  }
+              ]
+          }
+
+  IAMManagedPolicy17:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaVPCAccessExecutionRole-73f52732-d81e-42f2-bf5f-30d80ee2c234"
+      Path: "/service-role/"
+      PolicyDocument: |
+          {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                          "ec2:CreateNetworkInterface",
+                          "ec2:DeleteNetworkInterface",
+                          "ec2:DescribeNetworkInterfaces"
+                      ],
+                      "Resource": "*"
+                  }
+              ]
+          }
+
+  IAMServiceLinkedRole:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "ssm.amazonaws.com"
+      Description: "Provides access to AWS Resources managed or used by Amazon SSM."
+
+  IAMServiceLinkedRole2:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "apprunner.amazonaws.com"
+
+  IAMServiceLinkedRole3:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "autoscaling.amazonaws.com"
+      Description: "Default Service-Linked Role enables access to AWS Services and Resources used or managed by Auto Scaling"
+
+  IAMServiceLinkedRole4:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "dynamodb.application-autoscaling.amazonaws.com"
+
+  IAMServiceLinkedRole5:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "ops.apigateway.amazonaws.com"
+      Description: "The Service Linked Role is used by Amazon API Gateway."
+
+  IAMServiceLinkedRole6:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "servicecatalog-appregistry.amazonaws.com"
+
+  IAMServiceLinkedRole7:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "ecs.amazonaws.com"
+      Description: "Role to enable Amazon ECS to manage your cluster."
+
+  IAMServiceLinkedRole8:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "elasticache.amazonaws.com"
+      Description: "This policy allows ElastiCache to manage AWS resources on your behalf as necessary for managing your cache."
+
+  IAMServiceLinkedRole9:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "replication.cassandra.amazonaws.com"
+
+  IAMServiceLinkedRole10:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "organizations.amazonaws.com"
+      Description: "Service-linked role used by AWS Organizations to enable integration of other AWS services with Organizations."
+
+  IAMServiceLinkedRole11:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "sso.amazonaws.com"
+      Description: "Service-linked role used by AWS SSO to manage AWS resources, including IAM roles, policies and SAML IdP on your behalf."
+
